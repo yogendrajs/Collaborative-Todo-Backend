@@ -8,11 +8,12 @@ const _ = require('underscore');
 
 const { DB_HOST, DB_ME, DB_NAME, DB_PASS, PORT } = configData.envdata;
 app.use(express.json());
-app.use(cors({ 
-    credentials: true,
-    origin: 'http://localhost:5000'
- }));
+// app.use(cors({ 
+//     credentials: true,
+//     origin: 'http://localhost:5000'
+//  }));
 
+app.use(cors());
 
 const EventEmitter = require('events');
 
@@ -77,7 +78,7 @@ knex.schema.hasTable('cards').then(function(exists) {
       t.string('cardName');
       t.string('createdBy');
       t.string('creatorEmail');
-      t.dateTime('created_at');
+      t.string('created_at');
     });
   }
 });
