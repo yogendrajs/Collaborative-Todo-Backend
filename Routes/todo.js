@@ -17,7 +17,8 @@ module.exports = function(todo, knex, jwt){
                 .then(data => {
                     // console.log('data', data);
                     
-                    return res.json(data);
+                    return res.send({data: data, avatar: userData.firstName});
+                    // res.send(data);
                 })
                 .catch(err => console.log(err.message))
             }
