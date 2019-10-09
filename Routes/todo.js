@@ -128,7 +128,7 @@ module.exports = function(todo, knex, jwt){
     })
 
     todo.put('/checkbox', checkToken, (req,res) =>{
-        // console.log(req.params.id)
+        console.log(req.body.id)
         jwt.verify(req.token, process.env.SECRET, (err,authData) =>{
             if(!err){
                 var userId = authData.allData.userId;
@@ -136,7 +136,7 @@ module.exports = function(todo, knex, jwt){
 
                 knex('secret')
                 .where("secret.id", req.body.id)
-                .andWhere('secret.userId', userId)
+                // .andWhere('secret.userId', userId)
                 .update({
                     done:req.body.done
                 })
