@@ -15,7 +15,21 @@ module.exports = function(todo, knex, jwt){
                     .orWhere('secret.assignedTo', userData.email)
                 })
                 .then(data => {
-                    // console.log('data', data);
+                    // to check if the user belongs to the project id or not
+                    if (data.length === 0){
+                        knex('cards')
+                        .where('cards.creatorEmail', userData.email)
+                        .andWhere('cards.cardId', req.query.clickedCardIndex)
+                        .then(cardData => {
+                            if (cardData.length === 0){
+                                console.log('benefitted!');
+                                res.send('Invalid Card');
+                            }else
+                            return res.send({data: data, avatar: userData.firstName});
+                        })
+                        .catch(err => console.log(err));
+                        return;
+                    }
                     
                     return res.send({data: data, avatar: userData.firstName});
                     // res.send(data);
