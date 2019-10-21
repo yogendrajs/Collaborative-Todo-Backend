@@ -5,6 +5,10 @@ const configData = require('./config');
 const nodeoutlook = require('nodejs-nodemailer-outlook');
 const cors = require('cors');
 const _ = require('underscore');
+var multer = require('multer');
+var AWS = require('aws-sdk');
+var multerS3 = require('multer-s3');
+var path = require('path');
 
 const { DB_HOST, DB_ME, DB_NAME, DB_PASS, PORT } = configData.envdata;
 app.use(express.json());
@@ -67,6 +71,7 @@ knex.schema.hasTable('secret').then(function(exists) {
         t.string('assignedBy');
         t.string('assignedByName');
         t.string('cardId');
+        t.string('note').defaultTo('');
       });
     }
 });
@@ -79,6 +84,16 @@ knex.schema.hasTable('cards').then(function(exists) {
       t.string('createdBy');
       t.string('creatorEmail');
       t.string('created_at');
+    });
+  }
+});
+
+knex.schema.hasTable('files').then(function(exists) {
+  if (!exists) {
+    return knex.schema.createTable('files', function(t) {
+      t.increments('fileId').primary();
+      t.string('todoId');
+      t.string('fileLink');
     });
   }
 });
@@ -112,6 +127,14 @@ app.use('/', profile);
 var cards = express.Router();
 require('./Routes/cards')(cards, knex, jwt, _);
 app.use('/', cards);
+
+var notes = express.Router();
+require('./Routes/notes')(notes, knex, jwt);
+app.use('/', notes);
+
+var files = express.Router();
+require('./Routes/files')(files, knex, jwt, multer, multerS3, AWS, path);
+app.use('/', files);
 
 app.listen(PORT, () => {
     console.log(`your app is listening at port ${PORT}`);
