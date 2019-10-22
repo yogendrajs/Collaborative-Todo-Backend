@@ -1,4 +1,3 @@
-let checkToken = require("../middleware");
 let config = require("../config").envdata;
 
 module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
@@ -48,7 +47,8 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
         }
     }
 
-    files.post("/files", checkToken, (req, res) => {
+    files.post("/files", (req, res) => {
+        // console.log('all files', req.files);
         // let token = req.headers.authorization.slice(7)
         // console.log(req.body.token);
         // jwt.verify(req.body.token, config.SECRET, (err, authData) => {
