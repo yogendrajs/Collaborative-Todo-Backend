@@ -72,7 +72,7 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                             // console.log("authData is here", authData);
                             userId = authData.allData.userId;
                             let fileArray = req.files;
-                            // console.log("length", fileArray.length);
+                            // console.log("length", fileArray);
 
                             // Save the file name into database
                             const insertions = fileArray.map(file => {
@@ -82,11 +82,12 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                                 return knex("files").insert({
                                     fileLink: file.location,
                                     todoId: todoId,
-                                    userId: userId
+                                    userId: userId,
+                                    fileName: file.originalname
                                 });
                             });
 
-                            console.log('all insertions', insertions);
+                            // console.log('all insertions', insertions);
 
                             Promise.all(insertions)
                                 .then(() =>
@@ -100,7 +101,7 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                                         })
                                 )
                                 .catch(err => console.log(err));
-                                
+
                         } else {
                             console.log("token err", err);
                             res.json("token is not valid");

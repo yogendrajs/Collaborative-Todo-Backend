@@ -93,6 +93,7 @@ knex.schema.hasTable("files").then(function(exists) {
             t.increments("fileId").primary();
             t.string("todoId");
             t.string("userId");
+            t.string("fileName");
             t.string("fileLink");
         });
     }
