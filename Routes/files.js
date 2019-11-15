@@ -71,55 +71,36 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                         if (!err) {
                             // console.log("authData is here", authData);
                             userId = authData.allData.userId;
-                            let fileArray = req.files,
-                                fileLocation;
-                            console.log("length", fileArray.length);
-                            const imgLocationArray = [];
-                            for (let i = 0; i < fileArray.length; i++) {
-                                fileLocation = fileArray[i].location;
-                                // console.log("filename", fileLocation);
-                                imgLocationArray.push(fileLocation);
-                            }
+                            let fileArray = req.files;
+                            // console.log("length", fileArray.length);
+
                             // Save the file name into database
-                            for (var fileLink of imgLocationArray) {
-                                knex("files")
-                                    .insert({
-                                        fileLink: fileLink,
-                                        todoId: todoId,
-                                        userId: userId
-                                    })
-                                    .then(() => {
-                                        console.log();
-                                        knex("files")
-                                            .where("files.userId", userId)
-                                            .then(userFiles => {
-                                                // console.log('o shit', userFiles);
-                                                res.json({
-                                                    userFiles: userFiles
-                                                });
-                                            })
-                                            .catch(err => console.log(err));
-                                    })
-                                    .catch(err => console.log(err));
-                            }
+                            const insertions = fileArray.map(file => {
+                                // fileLocation = fileArray[i].location;
+                                console.log("this is the first case");
+                                // imgLocationArray.push(fileLocation);
+                                return knex("files").insert({
+                                    fileLink: file.location,
+                                    todoId: todoId,
+                                    userId: userId
+                                });
+                            });
 
-                            // await knex("files")
-                            //     .where("files.userId", userId)
-                            //     .then(userFiles => {
-                            //         console.log("o shit", userFiles);
-                            //         fileList = userFiles;
-                            //         // res.json({
-                            //         //     userFiles: userFiles
-                            //         // });
-                            //     })
-                            //     .catch(err => console.log(err));
+                            console.log('all insertions', insertions);
 
-                            // console.log("this is the file array", fileArray);
-
-                            // res.json({
-                            //     filesArray: fileArray,
-                            //     locationArray: imgLocationArray
-                            // });
+                            Promise.all(insertions)
+                                .then(() =>
+                                    knex("files")
+                                        .where("files.userId", userId)
+                                        .then(userFiles => {
+                                            console.log("baad wala hai yrr");
+                                            res.json({
+                                                userFiles: userFiles
+                                            });
+                                        })
+                                )
+                                .catch(err => console.log(err));
+                                
                         } else {
                             console.log("token err", err);
                             res.json("token is not valid");
