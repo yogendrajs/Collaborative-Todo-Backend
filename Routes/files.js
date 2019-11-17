@@ -34,7 +34,7 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
 
     function checkFileType(file, cb) {
         // Allowed ext
-        const filetypes = /jpeg|jpg|png|gif|pdf/;
+        const filetypes = /jpeg|jpg|png|pdf/;
         // Check ext
         const extname = filetypes.test(
             path.extname(file.originalname).toLowerCase()
@@ -72,7 +72,7 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                             // console.log("authData is here", authData);
                             userId = authData.allData.userId;
                             let fileArray = req.files;
-                            // console.log("length", fileArray);
+                            console.log("length", fileArray);
 
                             // Save the file name into database
                             const insertions = fileArray.map(file => {
@@ -83,7 +83,8 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                                     fileLink: file.location,
                                     todoId: todoId,
                                     userId: userId,
-                                    fileName: file.originalname
+                                    fileName: file.originalname,
+                                    fileType: file.originalname.split('.').pop()
                                 });
                             });
 
