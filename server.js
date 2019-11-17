@@ -94,6 +94,7 @@ knex.schema.hasTable("files").then(function(exists) {
             t.string("todoId");
             t.string("userId");
             t.string("fileName");
+            t.string("fileType");
             t.string("fileLink");
         });
     }
