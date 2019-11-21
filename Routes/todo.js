@@ -1,38 +1,48 @@
 let checkToken = require('../middleware');
 require('dotenv').config();
 
-module.exports = function(todo, knex, jwt){
+module.exports = function(todo, jwt, Auth, Cards, Secret, Op){
     todo.get('/get', checkToken, (req,res)=>{
         // console.log('params', req.query);
         jwt.verify(req.token, process.env.SECRET, function(err, authData) {
             if(!err){
                 var userData = authData.allData;
 
-                knex('secret')
-                .where('secret.cardId', req.query.clickedCardIndex)
-                .andWhere(function() {
-                    this.where('secret.assignedBy', userData.email)
-                    .orWhere('secret.assignedTo', userData.email)
+                Secret.findAll({
+                    where: {
+                        cardId: req.query.clickedCardIndex
+                    },
+                    $and: {
+                        where: {
+                            assignedBy: userData.email
+                        },
+                        $or: {
+                            assignedTo: userData.email
+                        }
+                    },
+                    raw: true
                 })
                 .then(data => {
-                    // to check if the user belongs to the project id or not
+                    // console.log('my pls call', data);
                     if (data.length === 0){
-                        knex('cards')
-                        .where('cards.creatorEmail', userData.email)
-                        .andWhere('cards.cardId', req.query.clickedCardIndex)
+                        Cards.findAll({
+                            where: {
+                                creatorEmail: userData.email,
+                                cardId: req.query.clickedCardIndex
+                            }
+                        })
                         .then(cardData => {
-                            if (cardData.length === 0){
-                                console.log('benefitted!');
+                            if (cardData.length === 0) {
                                 res.send('Invalid Card');
-                            }else
-                            return res.send({data: data, avatar: userData.firstName});
+                            }
+                            else {
+                                return res.send({data: data, avatar: userData.firstName});
+                            }
                         })
                         .catch(err => console.log(err));
                         return;
                     }
-                    
                     return res.send({data: data, avatar: userData.firstName});
-                    // res.send(data);
                 })
                 .catch(err => console.log(err.message))
             }
@@ -49,54 +59,52 @@ module.exports = function(todo, knex, jwt){
 
         jwt.verify(req.token, process.env.SECRET, (err, authData)=>{
             if(!err){
-
-                knex('user')
-                .where('user.email', data.assignedTo)
+                data.userId = authData.allData.userId;
+                Auth.findOne({
+                    where: {
+                        email: data.assignedTo
+                    },
+                    raw: true
+                })
                 .then(userExist => {
-
-                    if (userExist.length !== 0){
+                    // console.log('jism', userExist);
+                    if (userExist !== null) {
                         let userData = authData.allData;
-                        console.log('userdata', userData);
-                        data.userId = authData.allData.userId;
-                        knex('user')
-                        .where('user.email', data.assignedTo)
+                        
+                        Auth.findOne({
+                            where: {
+                                email: data.assignedTo
+                            }
+                        })
                         .then(assigneeDetails => {
-                            // console.log('assign', assigneeDetails);
                             data.assignedByName = userData.firstName;
                             data.assignedBy = userData.email;
-                            data.assignedToName = assigneeDetails[0].firstName;
-                            // console.log(data);
-                            // if (data.assignedByName === data.assignedToName){
-                            //     data.assignedToName = 'me';
-                            // }
+                            data.assignedToName = assigneeDetails.firstName;
 
-                            knex('secret')
-                            .insert(data)
+                            console.log(data);
+                            Secret.create(data)
                             .then(() => {
-                                console.log('this is data', data);
-                                knex('secret')
-                                .where('secret.cardId', data.cardId)
-                                .andWhere(function() {
-                                    this.where('secret.assignedBy', data.assignedBy)
-                                    .orWhere('secret.assignedTo', data.assignedBy)
+                                Secret.findAll({
+                                    where: {
+                                        cardId: data.cardId,
+                                    },
+                                    $and: {
+                                        where: {
+                                            [Op.or]: [{assignedBy: data.assignedBy}, {assignedTo: data.assignedBy}]
+                                        }
+                                    },
+                                    raw: true
                                 })
                                 .then(finaldata => {
-                                    console.log('aakhir', finaldata);
-                                    res.send(finaldata)
+                                    console.log('aakhir', finaldata)
+                                    res.send(finaldata);
                                 })
-                                .catch(err => console.log(err.message))
+                                .catch(err => console.log(err));
                             })
-                            .catch((err) => console.log(err.message))
-                            
                         })
-                        .catch(err => console.log(err));
-                    }
-                    else {
-                        res.send(userExist);
                     }
                 })
-                .catch(err => console.log('missing', err));
-                
+                .catch(err => console.log(err));
             }
             else{
                 console.log(err);
@@ -111,25 +119,24 @@ module.exports = function(todo, knex, jwt){
         jwt.verify(req.token, process.env.SECRET, function(err, authData){
             if(!err){
                 var wholeUpdateData = authData.allData;
-                knex('secret')
-                .where('secret.id', req.params.id)
-                .update({
-                    "item":req.body.editItem
+                Secret.update({item: req.body.editItem},{
+                    where: {
+                        id: req.params.id
+                    }
                 })
                 .then(() => {
-
-                    knex('secret')
-                    .where('secret.cardId', req.body.clickedCardIndex)
-                    .andWhere(function() {
-                        this.where('secret.assignedBy', wholeUpdateData.email)
-                        .orWhere('secret.assignedTo', wholeUpdateData.email)
+                    Secret.findAll({
+                        where: {
+                            cardId: req.body.clickedCardIndex
+                        },
+                        $and: {
+                            [Op.or]: [{assignedBy: wholeUpdateData.email}, {assignedTo: wholeUpdateData.email}]
+                        }
                     })
-                    .then(data =>{
-                        res.send(data)
+                    .then(data => {
+                        res.send(data);
                     })
-                    .catch((err)=>{
-                        console.log(err.message)
-                    })
+                    .catch(err => console.log(err.message));
                 })
                 .catch((err)=>{
                     console.log(err.message)
@@ -145,25 +152,25 @@ module.exports = function(todo, knex, jwt){
         console.log(req.body.id)
         jwt.verify(req.token, process.env.SECRET, (err,authData) =>{
             if(!err){
-                var userId = authData.allData.userId;
+                // var userId = authData.allData.userId;
                 var wholeUpdateData = authData.allData;
 
-                knex('secret')
-                .where("secret.id", req.body.id)
-                // .andWhere('secret.userId', userId)
-                .update({
-                    done:req.body.done
+                Secret.update({done: req.body.done}, {
+                    where: {
+                        id: req.body.id
+                    }
                 })
                 .then(() => {
-
-                    knex('secret')
-                    .where('secret.cardId', req.body.clickedCardIndex)
-                    .andWhere(function() {
-                        this.where('secret.assignedBy', wholeUpdateData.email)
-                        .orWhere('secret.assignedTo', wholeUpdateData.email)
+                    Secret.findAll({
+                        where: {
+                            cardId: req.body.clickedCardIndex
+                        },
+                        $and: {
+                            [Op.or]: [{assignedBy: wholeUpdateData.email}, {assignedTo: wholeUpdateData.email}]
+                        }
                     })
-                    .then(data =>{
-                        res.send(data)
+                    .then(data => {
+                        res.send(data);
                     })
                     .catch((err)=>{
                         console.log(err.message)
@@ -184,24 +191,24 @@ module.exports = function(todo, knex, jwt){
                 // var userId = authData.allData.userId;
                 var wholeUpdateData = authData.allData;
 
-                knex('secret')
-                .where('secret.id', req.params.id)
-                .del()
+                Secret.destroy({
+                    where: {
+                        id: req.params.id
+                    }
+                })
                 .then(() => {
-                    
-                    knex('secret')
-                    .where('secret.cardId', req.body.clickedCardIndex)
-                    .andWhere(function() {
-                        this.where('secret.assignedBy', wholeUpdateData.email)
-                        .orWhere('secret.assignedTo', wholeUpdateData.email)
+                    Secret.findAll({
+                        where: {
+                            cardId: req.body.clickedCardIndex
+                        },
+                        $and: {
+                            [Op.or]: [{assignedBy: wholeUpdateData.email}, {assignedTo: wholeUpdateData.email}]
+                        }
                     })
-                    .then(data =>{
-                        res.send(data)
+                    .then(data => {
+                        res.send(data);
                     })
-                    .catch((err)=>{
-                        console.log(err.message)
-                    })
-                    
+                    .catch(err => console.log(err.message))
                 })
                 .catch(err => console.log(err))
             }

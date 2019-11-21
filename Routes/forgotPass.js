@@ -1,17 +1,24 @@
 const config = require('../config').envdata;
 // console.log(config);
-module.exports = function(forgotPass, knex, nodeoutlook, jwt) {
+module.exports = function(forgotPass, nodeoutlook, jwt, Auth) {
    
    forgotPass.post('/forgot', (req, res) => {
-      console.log(req.body);
-      knex('user')
-      .where('user.email', req.body.email)
+      // console.log(req.body);
+      Auth.findOne({
+         where: {
+            email: req.body.email
+         }
+      })
       .then(data => {
-         if (data.length !== 0){
-            // console.log(data);
-            jwt.sign({allData: JSON.stringify(data[0])}, config.SECRET, { expiresIn: '3m' }, (err, token) => {
+         // data = data.dataValues;
+         if (data === null){
+            res.send(data);
+         }
+         else {
+            data = data.dataValues;
+            jwt.sign({allData: JSON.stringify(data)}, config.SECRET, { expiresIn: '3m' }, (err, token) => {
                if (!err){
-                   data[0].token = token;
+                   data.token = token;
 
                   nodeoutlook.sendEmail({
                      auth: {
@@ -46,12 +53,12 @@ module.exports = function(forgotPass, knex, nodeoutlook, jwt) {
               <td valign="top" style="padding: 48px 48px 32px;">
                                                            <div id="body_content_inner" style='color: #515151; font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif; font-size: 14px; line-height: 150%; text-align: left;'>
               
-              <p style="margin: 0 0 16px;">Hi ${data[0].firstName},</p>
+              <p style="margin: 0 0 16px;">Hi ${data.firstName},</p>
               <p style="margin: 0 0 16px;">You have requested a new password for your Todo Account</p>
-              <p style="margin: 0 0 16px;">Email: ${data[0].email}</p>
+              <p style="margin: 0 0 16px;">Email: ${data.email}</p>
               <p style="margin: 0 0 16px;">If you didn't make this request, just ignore this email. If you'd like to proceed:</p>
               <p style="margin: 0 0 16px;">
-                 <a class="link" href="http://localhost:3000/resetpass?key=${data[0].token}&id=${data[0].userId}" style="font-weight: normal; text-decoration: underline; color: #1976d2;">		Click here to reset your password	</a>
+                 <a class="link" href="http://localhost:3000/resetpass?key=${data.token}&id=${data.userId}" style="font-weight: normal; text-decoration: underline; color: #1976d2;">		Click here to reset your password	</a>
               </p>
               <p style="margin: 0 0 16px;">Thanks for reading.</p>
               
@@ -93,12 +100,8 @@ module.exports = function(forgotPass, knex, nodeoutlook, jwt) {
                    console.log(err);
                }
            })
-             
-         }else {
-            console.log(data);
-            res.send(data);
          }
       })
-      .catch(err => console.log(err));
+      .catch(err => console.log('ed', err));
    })
 }

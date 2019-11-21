@@ -1,7 +1,7 @@
 let config = require("../config").envdata;
 let checkToken = require("../middleware");
 
-module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
+module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
     const s3 = new aws.S3({
         accessKeyId: config.ACCESS_KEY_ID,
         secretAccessKey: config.SECRET_ACCESS_KEY,
@@ -77,42 +77,39 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
                             // Save the file name into database
                             const insertions = fileArray.map(file => {
                                 // fileLocation = fileArray[i].location;
-                                console.log("this is the first case");
+                                // console.log("this is the first case");
                                 // imgLocationArray.push(fileLocation);
-                                return knex("files").insert({
+                                return Files.create({
                                     fileLink: file.location,
                                     todoId: todoId,
                                     userId: userId,
                                     fileName: file.originalname,
-                                    fileType: file.originalname.split('.').pop()
-                                });
+                                    fileType: file.originalname.split(".").pop()
+                                })
                             });
 
                             // console.log('all insertions', insertions);
 
                             Promise.all(insertions)
                                 .then(() =>
-                                    knex("files")
-                                        .where("files.userId", userId)
-                                        .then(userFiles => {
-                                            console.log("baad wala hai yrr");
-                                            res.json({
-                                                userFiles: userFiles
-                                            });
-                                        })
+                                    Files.findAll({
+                                        where: {
+                                            userId: userId
+                                        }
+                                    })
+                                    .then(userFiles => {
+                                        // console.log("baad wala hai yrr");
+                                        res.json({
+                                            userFiles: userFiles
+                                        });
+                                    })
                                 )
                                 .catch(err => console.log(err));
-
                         } else {
                             console.log("token err", err);
                             res.json("token is not valid");
                         }
                     });
-                    // console.log(req.file.key);
-                    // console.log(req.file.location);
-
-                    // console.log("fileArray", fileArray);
-                    // console.log("locationArray", imgLocationArray);
                 }
             }
         });
@@ -120,14 +117,24 @@ module.exports = function(files, knex, jwt, multer, multerS3, aws, path) {
 
     files.get("/allfiles", checkToken, (req, res) => {
         jwt.verify(req.token, config.SECRET, (err, authData) => {
-            let userId = authData.allData.userId;
-            knex("files")
-                .where("files.userId", userId)
+            if (!err) {
+                let userId = authData.allData.userId;
+                console.log(userId);
+                Files.findAll({
+                    where: {
+                        userId: userId
+                    },
+                    raw: true
+                })
                 .then(userFiles => {
                     console.log("the user data", userFiles);
                     res.json({ userFiles: userFiles });
                 })
                 .catch(err => console.log(err));
+            } else {
+                console.log("token err", err);
+                res.json("token is not valid");
+            }
         });
     });
 };

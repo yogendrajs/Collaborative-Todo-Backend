@@ -1,7 +1,7 @@
 const checkToken = require('../middleware');
 const config = require('../config').envdata;
 
-module.exports = function(profile, knex, jwt) {
+module.exports = function(profile, jwt) {
     profile.post('/profile', checkToken, (req, res) => {
         jwt.verify(req.token, config.SECRET, (err, authData) => {
             if (!err) {

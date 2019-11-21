@@ -9,8 +9,9 @@ var multer = require("multer");
 var AWS = require("aws-sdk");
 var multerS3 = require("multer-s3");
 var path = require("path");
-
-const { DB_HOST, DB_ME, DB_NAME, DB_PASS, PORT } = configData.envdata;
+const { Auth, Cards, Comment, Files, Reply, Secret, Sequelize } = require("./sequelize");
+const { PORT } = configData.envdata;
+const Op = Sequelize.Op;
 app.use(express.json());
 // app.use(cors({
 //     credentials: true,
@@ -28,142 +29,48 @@ const myEmitter = new MyEmitter();
 myEmitter.setMaxListeners(100);
 myEmitter.emit("event");
 
-// var knex = require('knex') ({
-//     client: 'mysql',
-//     connection: {
-//         filename: './todoBackend'
-//     },
-//     useNullAsDefault: true
-// })
-
-var knex = require("knex")({
-    client: "mysql",
-    connection: {
-        host: DB_HOST,
-        user: DB_ME,
-        database: DB_NAME,
-        password: DB_PASS
-    }
-});
-
-knex.schema.hasTable("user").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("user", function(t) {
-            t.string("firstName");
-            t.string("lastName");
-            t.increments("userId").primary();
-            t.string("email").unique();
-            t.string("password");
-        });
-    }
-});
-
-knex.schema.hasTable("secret").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("secret", function(t) {
-            t.integer("userId");
-            t.increments("id").primary();
-            t.string("item");
-            t.boolean("done");
-            t.string("assignedTo");
-            t.string("assignedToName");
-            t.string("assignedBy");
-            t.string("assignedByName");
-            t.string("cardId");
-            t.string("note").defaultTo("");
-        });
-    }
-});
-
-knex.schema.hasTable("cards").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("cards", function(t) {
-            t.increments("cardId").primary();
-            t.string("cardName");
-            t.string("createdBy");
-            t.string("creatorEmail");
-            t.string("created_at");
-        });
-    }
-});
-
-knex.schema.hasTable("files").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("files", function(t) {
-            t.increments("fileId").primary();
-            t.string("todoId");
-            t.string("userId");
-            t.string("fileName");
-            t.string("fileType");
-            t.string("fileLink");
-        });
-    }
-});
-
-knex.schema.hasTable("comment").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("comment", function(t) {
-            t.string("todoId");
-            t.string("comment");
-            t.string("userId");
-            t.string("firstName");
-            t.string("time");
-            t.increments("commentId").primary();
-        });
-    }
-});
-
-knex.schema.hasTable("reply").then(function(exists) {
-    if (!exists) {
-        return knex.schema.createTable("reply", function(t) {
-            t.string("todoId");
-            t.string("commentId");
-            t.string("reply");
-            t.string("userId");
-            t.string("firstName");
-            t.string("time");
-        });
-    }
+app.get("/hello", (req, res) => {
+    Secret.findAll().then(auth => res.json(auth));
 });
 
 var todo = express.Router();
-require("./Routes/todo")(todo, knex, jwt);
+require("./Routes/todo")(todo, jwt, Auth, Cards, Secret, Op);
 app.use("/", todo);
 
 var auth = express.Router();
-require("./Routes/auth")(auth, knex, jwt);
+require("./Routes/auth")(auth, jwt, Auth);
 app.use("/", auth);
 
 var signup = express.Router();
-require("./Routes/signup")(signup, knex, jwt);
+require("./Routes/signup")(signup, jwt, Auth);
 app.use("/", signup);
 
 var forgotPass = express.Router();
-require("./Routes/forgotPass")(forgotPass, knex, nodeoutlook, jwt);
+require("./Routes/forgotPass")(forgotPass, nodeoutlook, jwt, Auth);
 app.use("/", forgotPass);
 
 var resetPass = express.Router();
-require("./Routes/resetPass")(resetPass, knex, jwt);
+require("./Routes/resetPass")(resetPass, jwt, Auth);
 app.use("/", resetPass);
 
 var profile = express.Router();
-require("./Routes/profile")(profile, knex, jwt);
+require("./Routes/profile")(profile, jwt);
 app.use("/", profile);
 
 var cards = express.Router();
-require("./Routes/cards")(cards, knex, jwt, _);
+require("./Routes/cards")(cards, jwt, _, Cards, Secret, Op);
 app.use("/", cards);
 
 var notes = express.Router();
-require("./Routes/notes")(notes, knex, jwt);
+require("./Routes/notes")(notes, jwt, Secret);
 app.use("/", notes);
 
 var files = express.Router();
-require("./Routes/files")(files, knex, jwt, multer, multerS3, AWS, path);
+require("./Routes/files")(files, jwt, multer, multerS3, AWS, path, Files);
 app.use("/", files);
 
 var comment = express.Router();
-require("./Routes/comment")(comment, knex, jwt);
+require("./Routes/comment")(comment, jwt, Comment, Reply);
 app.use("/", comment);
 
 app.listen(PORT, () => {
