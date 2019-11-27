@@ -67,7 +67,6 @@ module.exports = function(todo, jwt, Auth, Cards, Secret, Op){
                     raw: true
                 })
                 .then(userExist => {
-                    // console.log('jism', userExist);
                     if (userExist !== null) {
                         let userData = authData.allData;
                         
@@ -81,7 +80,7 @@ module.exports = function(todo, jwt, Auth, Cards, Secret, Op){
                             data.assignedBy = userData.email;
                             data.assignedToName = assigneeDetails.firstName;
 
-                            console.log(data);
+                            // console.log(data);
                             Secret.create(data)
                             .then(() => {
                                 Secret.findAll({
@@ -102,6 +101,9 @@ module.exports = function(todo, jwt, Auth, Cards, Secret, Op){
                                 .catch(err => console.log(err));
                             })
                         })
+                    }
+                    else {
+                        res.send(null);
                     }
                 })
                 .catch(err => console.log(err));
