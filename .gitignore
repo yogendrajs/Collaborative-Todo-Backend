@@ -1,2 +1,8 @@
+# To ignore all the dependencies
 node_modules/
+
+# To ignore all the environment variables
 .env
+
+# To ignore JSON configuration
+config/config.json
