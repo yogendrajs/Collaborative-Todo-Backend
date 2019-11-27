@@ -3,11 +3,11 @@ const config = process.env;
 
 module.exports = {
     development: {
-        username: 'root',
-        password: 'undefined',
-        database: 'todopro',
-        host: 'localhost',
-        dialect: 'mysql'
+        username: config.DB_ME,
+        password: config.DB_PASS,
+        database: config.DB_NAME,
+        host: config.DB_HOST,
+        dialect: config.DIALECT
     },
     test: {
         username: config.DB_ME,
