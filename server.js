@@ -9,7 +9,8 @@ var multer = require("multer");
 var AWS = require("aws-sdk");
 var multerS3 = require("multer-s3");
 var path = require("path");
-const { Auth, Cards, Comment, Files, Reply, Secret, Sequelize } = require("./sequelize");
+const Sequelize = require('sequelize');
+// const { Auth, Cards, Comment, Files, Reply, Secret, Sequelize } = require("./sequelize");
 const { PORT } = configData.envdata;
 const Op = Sequelize.Op;
 app.use(express.json());
@@ -18,16 +19,32 @@ app.use(express.json());
 //     origin: 'http://localhost:5000'
 //  }));
 
+const Auth = require('./models').user;
+const Cards = require('./models').cards;
+const Comment = require('./models').comment;
+const Files = require('./models').files;
+const Reply = require('./models').reply;
+const Secret = require('./models').secret;
+// const data = require('./models/index');
+// console.log(data);
+console.log(Auth, Cards, Comment, Files, Reply, Secret);
+
 app.use(cors());
 
 const EventEmitter = require("events");
-
 class MyEmitter extends EventEmitter {}
-
 const myEmitter = new MyEmitter();
 // increase the limit
 myEmitter.setMaxListeners(100);
 myEmitter.emit("event");
+
+app.use(function(req, res, next) { //allow cross origin requests
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "POST, PUT, OPTIONS, DELETE, GET");
+    res.header("Access-Control-Max-Age", "3600");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+    next();
+});
 
 app.get("/hello", (req, res) => {
     Secret.findAll().then(auth => res.json(auth));
