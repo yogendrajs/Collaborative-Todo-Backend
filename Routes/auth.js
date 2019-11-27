@@ -33,7 +33,7 @@ module.exports = function(auth, jwt, Auth) {
                 );
             })
             .catch(err => {
-                console.log('sahi hai', err.name);
+                console.log(err);
                 res.json(err.name);
             });
     });
