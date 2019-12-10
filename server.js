@@ -10,10 +10,14 @@ var AWS = require("aws-sdk");
 var multerS3 = require("multer-s3");
 var path = require("path");
 const Sequelize = require('sequelize');
+let cloudinary = require('cloudinary');
 // const { Auth, Cards, Comment, Files, Reply, Secret, Sequelize } = require("./sequelize");
 const { PORT } = configData.envdata;
 const Op = Sequelize.Op;
 app.use(express.json());
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: false }))
+
 // app.use(cors({
 //     credentials: true,
 //     origin: 'http://localhost:5000'
@@ -83,7 +87,7 @@ require("./Routes/notes")(notes, jwt, Secret);
 app.use("/", notes);
 
 var files = express.Router();
-require("./Routes/files")(files, jwt, multer, multerS3, AWS, path, Files);
+require("./Routes/files")(files, jwt, multer, multerS3, AWS, path, Files, cloudinary);
 app.use("/", files);
 
 var comment = express.Router();

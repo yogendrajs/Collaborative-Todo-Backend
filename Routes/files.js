@@ -1,12 +1,27 @@
 let config = require("../config").envdata;
 let checkToken = require("../middleware");
 
-module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
+module.exports = function(
+    files,
+    jwt,
+    multer,
+    multerS3,
+    aws,
+    path,
+    Files,
+    cloudinary
+) {
     const s3 = new aws.S3({
         accessKeyId: config.ACCESS_KEY_ID,
         secretAccessKey: config.SECRET_ACCESS_KEY,
         Bucket: config.BUCKET,
         region: "ap-south-1"
+    });
+
+    cloudinary.config({
+        cloud_name: config.CLOUDINARY_NAME,
+        api_key: config.CLOUDINARY_API_KEY,
+        api_secret: config.CLOUDINARY_API_SECRET
     });
 
     const uploadsBusinessGallery = multer({
@@ -54,9 +69,10 @@ module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
         // console.log(req.body.token);
 
         uploadsBusinessGallery(req, res, error => {
-            // console.log("files", req.files);
+            console.log("files", req.files, __dirname);
             let { todoId, token } = req.body;
             // console.log(token);
+
             if (error) {
                 console.log("errors", error);
                 res.json({ error: error });
@@ -73,20 +89,40 @@ module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
                             // console.log("authData is here", authData);
                             userId = authData.allData.userId;
                             let fileArray = req.files;
-                            console.log("length", fileArray);
+                            // console.log("length", fileArray);
 
                             // Save the file name into database
                             const insertions = fileArray.map(file => {
-                                // fileLocation = fileArray[i].location;
-                                // console.log("this is the first case");
-                                // imgLocationArray.push(fileLocation);
-                                return Files.create({
-                                    fileLink: file.location,
-                                    todoId: todoId,
-                                    userId: userId,
-                                    fileName: file.originalname,
-                                    fileType: file.originalname.split(".").pop()
-                                })
+
+                                if (file.originalname.split(".").pop() === 'pdf') {
+                                    // Cloudinary 
+                                    return new Promise((resolve, reject) => {
+                                        return cloudinary.uploader.upload(file.location, (result) => {
+                                                // console.log(result.secure_url);
+                                                var theresult = Files.create({
+                                                    fileLink: file.location,
+                                                    todoId: todoId,
+                                                    userId: userId,
+                                                    fileName: file.originalname,
+                                                    fileType: file.originalname.split(".").pop(),
+                                                    cloudinaryLink: result.secure_url
+                                                });
+                                                // outer(theresult);
+                                                return resolve(theresult);
+                                            },
+                                            { public_id: file.originalname, format: 'jpg' }
+                                        );
+                                    })
+                                }
+                                else {
+                                    return Files.create({
+                                        fileLink: file.location,
+                                        todoId: todoId,
+                                        userId: userId,
+                                        fileName: file.originalname,
+                                        fileType: file.originalname.split(".").pop(),
+                                    });
+                                }
                             });
 
                             // console.log('all insertions', insertions);
@@ -97,8 +133,7 @@ module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
                                         where: {
                                             userId: userId
                                         }
-                                    })
-                                    .then(userFiles => {
+                                    }).then(userFiles => {
                                         // console.log("baad wala hai yrr");
                                         res.json({
                                             userFiles: userFiles
@@ -127,11 +162,11 @@ module.exports = function(files, jwt, multer, multerS3, aws, path, Files) {
                     },
                     raw: true
                 })
-                .then(userFiles => {
-                    console.log("the user data", userFiles);
-                    res.json({ userFiles: userFiles });
-                })
-                .catch(err => console.log(err));
+                    .then(userFiles => {
+                        console.log("the user data", userFiles);
+                        res.json({ userFiles: userFiles });
+                    })
+                    .catch(err => console.log(err));
             } else {
                 console.log("token err", err);
                 res.json("token is not valid");
