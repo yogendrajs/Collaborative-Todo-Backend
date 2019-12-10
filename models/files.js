@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.STRING,
             fileName: DataTypes.STRING,
             fileType: DataTypes.STRING,
-            fileLink: DataTypes.STRING
+            fileLink: DataTypes.STRING,
+            cloudinaryLink: DataTypes.STRING
         },
         {
             freezeTableName: true,
