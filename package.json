@@ -26,7 +26,7 @@
     "nodemailer": "^6.4.1",
     "path": "^0.12.7",
     "reactjs-localstorage": "0.0.8",
-    "sequelize": "^5.21.2",
+    "sequelize": "^6.28.2",
     "sweetalert": "^2.1.2",
     "underscore": "^1.9.1"
   },
